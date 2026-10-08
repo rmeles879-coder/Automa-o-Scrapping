@@ -1,0 +1,32 @@
+# Python e ferramentas
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Configuração local e credenciais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Assets e resultados gerados
+.cache/
+output/
+work/
+
+# Editores e sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
