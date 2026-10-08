@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 
 from video_production.config import Settings
 
@@ -65,3 +65,25 @@ class SettingsTests(unittest.TestCase):
     def test_example_configuration_loads(self):
         example = Path(__file__).resolve().parents[1] / ".env.example"
         self.assertEqual(Settings(_env_file=example).log_level, "INFO")
+
+    def test_provider_credentials_use_exact_environment_names_and_are_not_serialized(self):
+        os.environ["PIXABAY_API_KEY"] = "not-a-real-pixabay-key"
+        os.environ["UNSPLASH_ACCESS_KEY"] = "not-a-real-unsplash-key"
+        settings = Settings(_env_file=None)
+        self.assertIsInstance(settings.pixabay_api_key, SecretStr)
+        self.assertEqual(settings.pixabay_api_key.get_secret_value(), "not-a-real-pixabay-key")
+        self.assertEqual(settings.unsplash_access_key.get_secret_value(), "not-a-real-unsplash-key")
+        self.assertNotIn("not-a-real-", repr(settings))
+        self.assertNotIn("pixabay_api_key", settings.model_dump())
+        self.assertNotIn("unsplash_access_key", settings.model_dump_json())
+
+    def test_blank_credentials_are_optional_and_timeout_user_agent_are_validated(self):
+        os.environ["PIXABAY_API_KEY"] = " "
+        os.environ["UNSPLASH_ACCESS_KEY"] = ""
+        settings = Settings(_env_file=None)
+        self.assertIsNone(settings.pixabay_api_key)
+        self.assertIsNone(settings.unsplash_access_key)
+        self.assertIn("github.com/rmeles879-coder/Automa-o-Scrapping", settings.user_agent)
+        for values in ({"http_timeout_seconds": 0}, {"user_agent": "  "}):
+            with self.subTest(values=values), self.assertRaises(ValidationError):
+                Settings(_env_file=None, **values)

@@ -105,9 +105,7 @@ class ModelTests(unittest.TestCase):
             media=(SceneMedia(scene_id="opening", asset=asset(), local_path=Path("city.jpg")),),
             output_path=Path("output/video.mp4"),
         )
-        self.assertEqual(
-            CompositionRequest.model_validate_json(request.model_dump_json()), request
-        )
+        self.assertEqual(CompositionRequest.model_validate_json(request.model_dump_json()), request)
 
     def test_composition_rejects_unknown_and_duplicate_scene_media(self):
         for ids in (("unknown",), ("opening", "opening")):
@@ -120,3 +118,18 @@ class ModelTests(unittest.TestCase):
                     ),
                     output_path=Path("video.mp4"),
                 )
+
+    def test_asset_serializes_new_canonical_fields_and_accepts_legacy_names(self):
+        legacy = asset()
+        payload = legacy.model_dump(mode="json")
+        self.assertEqual(payload["source"], "local")
+        self.assertEqual(payload["media_type"], "image")
+        self.assertEqual(payload["download_url"], "file:///assets/city.jpg")
+        self.assertTrue(
+            {"title", "description", "tags", "thumbnail_url", "source_page_url", "author"}
+            <= payload.keys()
+        )
+        self.assertNotIn("provider", payload)
+        self.assertNotIn("kind", payload)
+        self.assertNotIn("uri", payload)
+        self.assertEqual(Asset.model_validate_json(legacy.model_dump_json()), legacy)

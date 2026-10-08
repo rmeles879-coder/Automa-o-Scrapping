@@ -1,10 +1,10 @@
 """Dados que atravessam as fronteiras dos módulos."""
 
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 NonEmptyText = Annotated[str, Field(min_length=1)]
 PositiveSeconds = Annotated[float, Field(gt=0, allow_inf_nan=False)]
@@ -16,7 +16,7 @@ class DomainModel(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True)
 
 
-class AssetKind(str, Enum):
+class AssetKind(StrEnum):
     IMAGE = "image"
     VIDEO = "video"
     AUDIO = "audio"
@@ -38,13 +38,33 @@ class AssetLicense(DomainModel):
 
 class Asset(DomainModel):
     id: NonEmptyText
-    provider: NonEmptyText
-    kind: AssetKind
-    uri: NonEmptyText
+    source: NonEmptyText = Field(validation_alias=AliasChoices("source", "provider"))
+    media_type: AssetKind = Field(validation_alias=AliasChoices("media_type", "kind"))
+    download_url: NonEmptyText = Field(validation_alias=AliasChoices("download_url", "uri"))
+    title: str | None = None
+    description: str | None = None
+    tags: tuple[str, ...] = ()
+    thumbnail_url: HttpUrl | None = None
+    source_page_url: HttpUrl | None = None
+    author: str | None = None
     license: AssetLicense
+    download_tracking_url: HttpUrl | None = None
     width: int | None = Field(default=None, gt=0)
     height: int | None = Field(default=None, gt=0)
     duration_seconds: PositiveSeconds | None = None
+
+    # Compatibilidade de leitura/construção com os nomes da Etapa 1.
+    @property
+    def provider(self) -> str:
+        return self.source
+
+    @property
+    def kind(self) -> AssetKind:
+        return self.media_type
+
+    @property
+    def uri(self) -> str:
+        return self.download_url
 
 
 class VisualReference(DomainModel):

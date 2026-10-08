@@ -24,12 +24,18 @@ class InMemoryAssetProvider:
 class InterfaceTests(unittest.IsolatedAsyncioTestCase):
     async def test_consumer_accepts_an_injected_provider(self):
         image = Asset(
-            id="image-1", provider="memory", kind=AssetKind.IMAGE,
-            uri="file:///city.jpg", license=AssetLicense(name="CC0"),
+            id="image-1",
+            provider="memory",
+            kind=AssetKind.IMAGE,
+            uri="file:///city.jpg",
+            license=AssetLicense(name="CC0"),
         )
         video = Asset(
-            id="video-1", provider="memory", kind=AssetKind.VIDEO,
-            uri="file:///city.mp4", license=AssetLicense(name="CC0"),
+            id="video-1",
+            provider="memory",
+            kind=AssetKind.VIDEO,
+            uri="file:///city.mp4",
+            license=AssetLicense(name="CC0"),
         )
         provider: AssetProvider = InMemoryAssetProvider((video, image, image))
         results = await provider.search(AssetQuery(query="city", limit=1))
